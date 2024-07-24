@@ -7,6 +7,7 @@ use mio::event::{Source};
 
 use std::net::{SocketAddr};
 use std::io::{self};
+use std::sync::Arc;
 
 /// High level trait to represent an adapter for a transport protocol.
 /// The adapter is only used to identify the resources of your adapter.
@@ -149,6 +150,10 @@ pub trait Remote: Resource + Sized {
     /// The [`SendStatus`] will contain the status of this attempt.
     fn send(&self, data: &[u8]) -> SendStatus;
 
+    fn send_arc(&self, data: Arc<Vec<u8>>) -> SendStatus {
+        self.send(&data)
+    }
+
     /// Called when a `Remote` is created (explicity of by a listener)
     /// and it is not consider ready yet.
     /// A remote resource **is considered ready** when it is totally connected
@@ -224,6 +229,10 @@ pub trait Local: Resource + Sized {
     /// The **implementator** must **only** implement this function if the local resource can
     /// also send data.
     fn send_to(&self, _addr: SocketAddr, _data: &[u8]) -> SendStatus {
+        panic!("Adapter not configured to send messages directly from the local resource")
+    }
+
+    fn send_to_arc(&self, _addr: SocketAddr, _data: Arc<Vec<u8>>) -> SendStatus {
         panic!("Adapter not configured to send messages directly from the local resource")
     }
 }

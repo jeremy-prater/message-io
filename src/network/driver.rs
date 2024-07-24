@@ -80,6 +80,7 @@ pub trait ActionController: Send + Sync {
         addr: SocketAddr,
     ) -> io::Result<(ResourceId, SocketAddr)>;
     fn send(&self, endpoint: Endpoint, data: &[u8]) -> SendStatus;
+    fn send_arc(&self, endpoint: Endpoint, data: Arc<Vec<u8>>) -> SendStatus;
     fn remove(&self, id: ResourceId) -> bool;
     fn is_ready(&self, id: ResourceId) -> Option<bool>;
 }
@@ -182,6 +183,22 @@ impl<R: Remote, L: Local> ActionController for Driver<R, L> {
             },
             ResourceType::Local => match self.local_registry.get(endpoint.resource_id()) {
                 Some(remote) => remote.resource.send_to(endpoint.addr(), data),
+                None => SendStatus::ResourceNotFound,
+            },
+        }
+    }
+
+    fn send_arc(&self, endpoint: Endpoint, data: Arc<Vec<u8>>) -> SendStatus {
+        match endpoint.resource_id().resource_type() {
+            ResourceType::Remote => match self.remote_registry.get(endpoint.resource_id()) {
+                Some(remote) => match remote.properties.is_ready() {
+                    true => remote.resource.send_arc(data),
+                    false => SendStatus::ResourceNotAvailable,
+                },
+                None => SendStatus::ResourceNotFound,
+            },
+            ResourceType::Local => match self.local_registry.get(endpoint.resource_id()) {
+                Some(remote) => remote.resource.send_to_arc(endpoint.addr(), data),
                 None => SendStatus::ResourceNotFound,
             },
         }

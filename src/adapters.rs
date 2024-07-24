@@ -4,6 +4,8 @@ mod template;
 pub mod tcp;
 #[cfg(feature = "tcp")]
 pub mod framed_tcp;
+#[cfg(feature = "tcp")]
+pub mod async_framed_tcp;
 #[cfg(feature = "udp")]
 pub mod udp;
 #[cfg(feature = "websocket")]

@@ -27,6 +27,7 @@ use poll::{Poll, PollEvent};
 use strum::{IntoEnumIterator};
 
 use std::net::{SocketAddr, ToSocketAddrs};
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 use std::io::{self};
 
@@ -306,6 +307,14 @@ impl NetworkController {
         log::trace!("Sending {} bytes to {}...", data.len(), endpoint);
         let status =
             self.controllers[endpoint.resource_id().adapter_id() as usize].send(endpoint, data);
+        log::trace!("Send status: {:?}", status);
+        status
+    }
+
+    pub fn send_arc(&self, endpoint: Endpoint, data: Arc<Vec<u8>>) -> SendStatus {
+        log::trace!("Sending {} bytes to {}...", data.len(), endpoint);
+        let status =
+            self.controllers[endpoint.resource_id().adapter_id() as usize].send_arc(endpoint, data);
         log::trace!("Send status: {:?}", status);
         status
     }

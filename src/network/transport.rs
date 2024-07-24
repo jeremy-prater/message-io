@@ -1,9 +1,13 @@
-use super::loader::{DriverLoader};
+use super::loader::DriverLoader;
 
 #[cfg(feature = "tcp")]
 use crate::adapters::tcp::{TcpAdapter, TcpConnectConfig, TcpListenConfig};
 #[cfg(feature = "tcp")]
 use crate::adapters::framed_tcp::{FramedTcpAdapter, FramedTcpConnectConfig, FramedTcpListenConfig};
+#[cfg(feature = "tcp")]
+use crate::adapters::async_framed_tcp::{
+    AsyncFramedTcpAdapter, AsyncFramedTcpConnectConfig, AsyncFramedTcpListenConfig,
+};
 #[cfg(feature = "udp")]
 use crate::adapters::udp::{self, UdpAdapter, UdpConnectConfig, UdpListenConfig};
 #[cfg(feature = "websocket")]
@@ -33,6 +37,9 @@ pub enum Transport {
     #[cfg(feature = "tcp")]
     FramedTcp,
 
+    #[cfg(feature = "tcp")]
+    AsyncFramedTcp,
+
     /// UDP protocol (available through the *udp* feature).
     /// Take into account that UDP is not connection oriented and a packet can be lost
     /// or received disordered.
@@ -59,6 +66,8 @@ impl Transport {
             Self::Tcp => loader.mount(self.id(), TcpAdapter),
             #[cfg(feature = "tcp")]
             Self::FramedTcp => loader.mount(self.id(), FramedTcpAdapter),
+            #[cfg(feature = "tcp")]
+            Self::AsyncFramedTcp => loader.mount(self.id(), AsyncFramedTcpAdapter),
             #[cfg(feature = "udp")]
             Self::Udp => loader.mount(self.id(), UdpAdapter),
             #[cfg(feature = "websocket")]
@@ -78,6 +87,8 @@ impl Transport {
             Self::Tcp => usize::MAX,
             #[cfg(feature = "tcp")]
             Self::FramedTcp => usize::MAX,
+            #[cfg(feature = "tcp")]
+            Self::AsyncFramedTcp => usize::MAX,
             #[cfg(feature = "udp")]
             Self::Udp => udp::MAX_LOCAL_PAYLOAD_LEN,
             #[cfg(feature = "websocket")]
@@ -93,6 +104,8 @@ impl Transport {
             Transport::Tcp => true,
             #[cfg(feature = "tcp")]
             Transport::FramedTcp => true,
+            #[cfg(feature = "tcp")]
+            Transport::AsyncFramedTcp => true,
             #[cfg(feature = "udp")]
             Transport::Udp => false,
             #[cfg(feature = "websocket")]
@@ -112,6 +125,8 @@ impl Transport {
             Transport::Tcp => false,
             #[cfg(feature = "tcp")]
             Transport::FramedTcp => true,
+            #[cfg(feature = "tcp")]
+            Transport::AsyncFramedTcp => true,
             #[cfg(feature = "udp")]
             Transport::Udp => true,
             #[cfg(feature = "websocket")]
@@ -127,10 +142,12 @@ impl Transport {
             Transport::Tcp => 0,
             #[cfg(feature = "tcp")]
             Transport::FramedTcp => 1,
+            #[cfg(feature = "tcp")]
+            Transport::AsyncFramedTcp => 2,
             #[cfg(feature = "udp")]
-            Transport::Udp => 2,
+            Transport::Udp => 3,
             #[cfg(feature = "websocket")]
-            Transport::Ws => 3,
+            Transport::Ws => 4,
         }
     }
 }
@@ -163,6 +180,8 @@ pub enum TransportConnect {
     Tcp(TcpConnectConfig),
     #[cfg(feature = "tcp")]
     FramedTcp(FramedTcpConnectConfig),
+    #[cfg(feature = "tcp")]
+    AsyncFramedTcp(AsyncFramedTcpConnectConfig),
     #[cfg(feature = "udp")]
     Udp(UdpConnectConfig),
     #[cfg(feature = "websocket")]
@@ -176,6 +195,8 @@ impl TransportConnect {
             Self::Tcp(_) => Transport::Tcp,
             #[cfg(feature = "tcp")]
             Self::FramedTcp(_) => Transport::FramedTcp,
+            #[cfg(feature = "tcp")]
+            Self::AsyncFramedTcp(_) => Transport::AsyncFramedTcp,
             #[cfg(feature = "udp")]
             Self::Udp(_) => Transport::Udp,
             #[cfg(feature = "websocket")]
@@ -193,6 +214,10 @@ impl From<Transport> for TransportConnect {
             Transport::Tcp => Self::Tcp(TcpConnectConfig::default()),
             #[cfg(feature = "tcp")]
             Transport::FramedTcp => Self::FramedTcp(FramedTcpConnectConfig::default()),
+            #[cfg(feature = "tcp")]
+            Transport::AsyncFramedTcp => {
+                Self::AsyncFramedTcp(AsyncFramedTcpConnectConfig::default())
+            }
             #[cfg(feature = "udp")]
             Transport::Udp => Self::Udp(UdpConnectConfig::default()),
             #[cfg(feature = "websocket")]
@@ -207,6 +232,8 @@ pub enum TransportListen {
     Tcp(TcpListenConfig),
     #[cfg(feature = "tcp")]
     FramedTcp(FramedTcpListenConfig),
+    #[cfg(feature = "tcp")]
+    AsyncFramedTcp(AsyncFramedTcpListenConfig),
     #[cfg(feature = "udp")]
     Udp(UdpListenConfig),
     #[cfg(feature = "websocket")]
@@ -220,6 +247,8 @@ impl TransportListen {
             Self::Tcp(_) => Transport::Tcp,
             #[cfg(feature = "tcp")]
             Self::FramedTcp(_) => Transport::FramedTcp,
+            #[cfg(feature = "tcp")]
+            Self::AsyncFramedTcp(_) => Transport::AsyncFramedTcp,
             #[cfg(feature = "udp")]
             Self::Udp(_) => Transport::Udp,
             #[cfg(feature = "websocket")]
@@ -237,6 +266,10 @@ impl From<Transport> for TransportListen {
             Transport::Tcp => Self::Tcp(TcpListenConfig::default()),
             #[cfg(feature = "tcp")]
             Transport::FramedTcp => Self::FramedTcp(FramedTcpListenConfig::default()),
+            #[cfg(feature = "tcp")]
+            Transport::AsyncFramedTcp => {
+                Self::AsyncFramedTcp(AsyncFramedTcpListenConfig::default())
+            }
             #[cfg(feature = "udp")]
             Transport::Udp => Self::Udp(UdpListenConfig::default()),
             #[cfg(feature = "websocket")]

@@ -10,6 +10,7 @@ use super::adapter::{Adapter, SendStatus};
 use std::net::{SocketAddr};
 use std::io::{self};
 use std::panic::{UnwindSafe};
+use std::sync::Arc;
 
 type Controller = Box<dyn ActionController + Send + UnwindSafe>;
 type Processor = Box<dyn EventProcessor + Send + UnwindSafe>;
@@ -89,6 +90,10 @@ impl ActionController for UnimplementedDriver {
     }
 
     fn is_ready(&self, _: ResourceId) -> Option<bool> {
+        panic!("{}", UNIMPLEMENTED_DRIVER_ERR);
+    }
+
+    fn send_arc(&self, _: Endpoint, _: Arc<Vec<u8>>) -> SendStatus {
         panic!("{}", UNIMPLEMENTED_DRIVER_ERR);
     }
 }
