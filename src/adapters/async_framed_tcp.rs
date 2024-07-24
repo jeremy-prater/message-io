@@ -22,7 +22,7 @@ use std::mem::{forget, MaybeUninit};
 use std::os::windows::io::{FromRawSocket, AsRawSocket};
 #[cfg(not(target_os = "windows"))]
 use std::os::{fd::AsRawFd, unix::io::FromRawFd};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 const INPUT_BUFFER_SIZE: usize = u16::MAX as usize; // 2^16 - 1
 
@@ -75,7 +75,7 @@ impl Adapter for AsyncFramedTcpAdapter {
 pub(crate) struct RemoteResource {
     stream: TcpStream,
     decoder: RefCell<Decoder>,
-    queue: RefCell<VecDeque<EncodedMessage>>,
+    queue: Mutex<VecDeque<EncodedMessage>>,
     keepalive: Option<TcpKeepalive>,
     nodelay: Option<bool>,
 }
@@ -90,7 +90,7 @@ impl RemoteResource {
         Self {
             stream,
             decoder: RefCell::new(Decoder::default()),
-            queue: RefCell::new(Default::default()),
+            queue: Mutex::new(Default::default()),
             keepalive,
             nodelay,
         }
@@ -154,7 +154,7 @@ impl Remote for RemoteResource {
 
     fn send(&self, data: &[u8]) -> SendStatus {
         {
-            let mut queue = self.queue.borrow_mut();
+            let mut queue = self.queue.lock().unwrap();
             queue.push_back(EncodedMessage::new(Arc::new(data.to_owned())));
         }
 
@@ -163,7 +163,7 @@ impl Remote for RemoteResource {
 
     fn send_arc(&self, msg: Arc<Vec<u8>>) -> SendStatus {
         {
-            let mut queue = self.queue.borrow_mut();
+            let mut queue = self.queue.lock().unwrap();
             queue.push_back(EncodedMessage::new(msg));
         }
         self.try_write()
@@ -212,7 +212,11 @@ impl Remote for RemoteResource {
 
 impl RemoteResource {
     pub fn try_write(&self) -> SendStatus {
-        let mut queue = self.queue.borrow_mut();
+        let Ok(mut queue) = self.queue.try_lock()
+        else {
+            return SendStatus::Sent;
+        };
+
         let mut stream = &self.stream;
 
         while let Some(msg) = queue.front_mut() {
