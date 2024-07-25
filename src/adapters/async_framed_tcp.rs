@@ -1,4 +1,3 @@
-use nix::NixPath;
 pub use socket2::TcpKeepalive;
 
 use crate::network::adapter::{
